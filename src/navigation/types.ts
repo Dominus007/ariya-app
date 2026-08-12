@@ -4,6 +4,7 @@ export type TabParamList = {
   Home: undefined;
   Search: undefined;
   Library: undefined;
+  Downloads: undefined;
   Profile: undefined;
 };
 

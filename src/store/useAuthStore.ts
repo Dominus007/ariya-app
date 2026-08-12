@@ -8,9 +8,7 @@ interface AuthState {
   user: User | null;
   /** True until the initial getSession() call resolves. */
   isLoading: boolean;
-  isSubscribed: boolean;
   setSession: (session: Session | null) => void;
-  setSubscribed: (isSubscribed: boolean) => void;
   /** Returns an error message on failure, or null on success. Session updates
    * arrive via onAuthStateChange (see initialize), not this return value. */
   signInWithEmail: (email: string, password: string) => Promise<string | null>;
@@ -29,10 +27,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   session: null,
   user: null,
   isLoading: true,
-  isSubscribed: false,
 
   setSession: (session) => set({ session, user: session?.user ?? null }),
-  setSubscribed: (isSubscribed) => set({ isSubscribed }),
 
   signInWithEmail: async (email, password) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -45,9 +41,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     return { error: null, needsEmailConfirmation: !data.session };
   },
 
+  // Clears the Supabase session; RootNavigator reacts to `session` becoming
+  // null by swapping to the signed-out stack (Landing first), so no
+  // explicit navigation call is needed here.
   signOut: async () => {
     await supabase.auth.signOut();
-    set({ session: null, user: null, isSubscribed: false });
+    set({ session: null, user: null });
   },
 
   initialize: () => {

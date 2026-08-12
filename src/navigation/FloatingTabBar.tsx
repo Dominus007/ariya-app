@@ -25,6 +25,7 @@ const BASE_ICON: Record<string, string> = {
   Home: 'home',
   Search: 'search',
   Library: 'library',
+  Downloads: 'download',
   Profile: 'person',
 };
 

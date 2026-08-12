@@ -23,6 +23,7 @@ const SECTIONS: { label: string; items: NavItem[] }[] = [
       { route: 'Home', label: 'Home', icon: 'home' },
       { route: 'Search', label: 'Search', icon: 'search' },
       { route: 'Library', label: 'Library', icon: 'library' },
+      { route: 'Downloads', label: 'Downloads', icon: 'download' },
     ],
   },
   {

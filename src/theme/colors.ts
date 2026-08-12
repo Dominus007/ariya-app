@@ -31,4 +31,10 @@ export const colors = {
 
   // Translucent gold used for the skeleton shimmer sweep, over the goldTint block.
   shimmer: 'rgba(229, 182, 90, 0.35)',
+
+  // Toggle switches (Profile screen notifications) — off-state track.
+  toggleOff: '#3A3830',
+
+  // Profile screen settings cards use a subtler border than colors.border/cardBorder.
+  settingsBorder: 'rgba(255, 255, 255, 0.06)',
 };

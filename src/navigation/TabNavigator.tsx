@@ -8,6 +8,7 @@ import { MiniPlayerBar } from '../components/MiniPlayerBar';
 import { ModeToggle } from '../components/ModeToggle';
 import { PlaybackEngine } from '../components/PlaybackEngine';
 import { Sidebar } from '../components/Sidebar';
+import { DownloadsScreen } from '../screens/DownloadsScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LibraryScreen } from '../screens/LibraryScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
@@ -49,6 +50,7 @@ function MobileLayout() {
         <Tab.Screen name="Home" component={HomeScreen} />
         <Tab.Screen name="Search" component={SearchScreen} />
         <Tab.Screen name="Library" component={LibraryScreen} />
+        <Tab.Screen name="Downloads" component={DownloadsScreen} />
         <Tab.Screen name="Profile" component={ProfileScreen} />
       </Tab.Navigator>
 
@@ -80,6 +82,7 @@ function WideLayout() {
         {activeRoute === 'Home' && <HomeScreen />}
         {activeRoute === 'Search' && <SearchScreen />}
         {activeRoute === 'Library' && <LibraryScreen />}
+        {activeRoute === 'Downloads' && <DownloadsScreen />}
         {activeRoute === 'Profile' && <ProfileScreen />}
 
         <View pointerEvents="box-none" style={[styles.toggleOverlay, { top: insets.top + 8 }]}>
