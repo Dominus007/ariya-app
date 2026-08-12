@@ -74,21 +74,41 @@ function FeatureRow({ text }: { text: string }) {
 
 const PLANS = [
   {
-    name: 'Basic',
+    name: 'Nigeria',
     price: '₦1,500',
-    features: ['Listen Mode only', 'Standard audio quality', '1 device'],
+    features: [
+      'Listen Mode — full music, podcasts, radio',
+      'All African and global music catalogue',
+      'Offline downloads — 50 tracks',
+      '1 device',
+      'Adaptive streaming for Nigerian networks',
+    ],
     highlighted: false,
   },
   {
-    name: 'Premium',
+    name: 'Family',
     price: '₦3,500',
-    features: ['Listen + Watch Mode', 'HD streaming', '2 devices', 'Offline downloads'],
+    features: [
+      'Everything in Nigeria plan',
+      'Full Watch Mode — Nollywood, Hollywood, Bollywood, K-Drama',
+      'Live sports and pay-per-view access',
+      'Up to 5 profiles',
+      '2 simultaneous devices',
+      '100 offline downloads per profile',
+      'Parental controls',
+    ],
     highlighted: true,
   },
   {
-    name: 'Family',
-    price: '₦6,000',
-    features: ['Everything in Premium', 'Up to 5 profiles', '4K streaming', 'Live sports included'],
+    name: 'Global',
+    price: '$5.99',
+    features: [
+      'Everything in Family plan',
+      'USD billing for Africans abroad',
+      '4K streaming where available',
+      '3 simultaneous devices',
+      'Priority support',
+    ],
     highlighted: false,
   },
 ];
