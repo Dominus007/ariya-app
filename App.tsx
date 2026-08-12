@@ -35,7 +35,7 @@ const navigationTheme = {
 export default function App() {
   const initialize = useAuthStore((state) => state.initialize);
 
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     PlayfairDisplay_700Bold,
     PlayfairDisplay_800ExtraBold,
     PlayfairDisplay_900Black,
@@ -45,11 +45,23 @@ export default function App() {
   });
 
   useEffect(() => {
+    if (fontError) {
+      // Don't let a font 404/network failure hang the app on the loading
+      // screen forever (that's exactly what was happening here — see the
+      // Netlify blank-page investigation). We proceed and render anyway;
+      // on web, src/theme/typography.ts's CSS fallback stack (Georgia/
+      // system-ui) picks up the slack so text still renders instead of
+      // vanishing.
+      console.error('[App] Font loading failed, proceeding with fallback fonts:', fontError);
+    }
+  }, [fontError]);
+
+  useEffect(() => {
     const unsubscribe = initialize();
     return unsubscribe;
   }, [initialize]);
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded && !fontError) {
     // Themed hold instead of `null` so this doesn't flash RN's default white
     // background before the brand fonts (and everything that depends on
     // them rendering with correct metrics) are ready.

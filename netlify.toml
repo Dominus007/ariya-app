@@ -1,0 +1,19 @@
+[build]
+  command = "npx expo export --platform web"
+  publish = "dist"
+
+[build.environment]
+  # Pin to the Node version this project is built/tested against.
+  NODE_VERSION = "24"
+
+# React Native Web (via plain React Navigation, no expo-router/file routing)
+# renders everything client-side from a single index.html — there are no
+# real per-route files for Netlify to serve. Without this, a hard refresh or
+# a shared/bookmarked deep link to anything other than "/" 404s, because
+# Netlify looks for a matching static file first. This sends every request
+# to index.html instead and lets the app's own client-side navigation take
+# it from there.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
