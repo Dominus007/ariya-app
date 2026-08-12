@@ -23,7 +23,7 @@ import { fonts } from '../theme/typography';
 // page's pricing section) instead of hardcoding one here.
 const DEFAULT_TIER: SubscriptionTier = 'family';
 const TIER_PRICE_NAIRA: Record<SubscriptionTier, number> = {
-  nigeria: 2500,
+  nigeria: 1500,
   family: 6000,
   global: 9000,
 };
@@ -174,7 +174,7 @@ export function ProfileScreen() {
                 ? `₦${(activeSubscription.amountNaira ?? TIER_PRICE_NAIRA[activeSubscription.tier]).toLocaleString()}/month${
                     renewalDate ? ` · renews ${renewalDate}` : ''
                   } · Paystack`
-                : 'Upgrade to unlock Watch mode, downloads, and more'}
+                : 'Manage your plan · ₦1,500/mo Nigeria · $5.99/mo Global'}
           </Text>
         </View>
         {isPaying ? (
