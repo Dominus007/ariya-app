@@ -10,7 +10,7 @@ import { SettingsCard, SettingsDivider } from '../components/profile/SettingsCar
 import { ToggleRow } from '../components/profile/ToggleRow';
 import { haptics } from '../lib/haptics';
 import type { Language, QualityLevel } from '../services/preferences';
-import type { SubscriptionTier } from '../services/subscriptions';
+import type { ActiveSubscription, SubscriptionTier } from '../services/subscriptions';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/useAuthStore';
 import { useActiveSubscription } from '../hooks/useSubscription';
@@ -22,16 +22,31 @@ import { fonts } from '../theme/typography';
 // example. BEFORE_LAUNCH_TODO: let the user pick a tier (see the Landing
 // page's pricing section) instead of hardcoding one here.
 const DEFAULT_TIER: SubscriptionTier = 'family';
-const TIER_PRICE_NAIRA: Record<SubscriptionTier, number> = {
-  nigeria: 1500,
-  family: 6000,
-  global: 9000,
-};
+// Paystack's popup.checkout `amount` is Naira-only — matches the Landing
+// page's Family plan price exactly. Global is USD (see TIER_PRICE_DISPLAY
+// below) and can't be charged through this same Naira checkout flow yet.
+const DEFAULT_TIER_PRICE_NAIRA = 3500;
+
 const TIER_LABEL: Record<SubscriptionTier, string> = {
   nigeria: 'NIGERIA TIER',
   family: 'FAMILY TIER',
   global: 'GLOBAL TIER',
 };
+
+// Mirrors the Landing page's pricing section exactly (src/components/landing/LandingSections.tsx).
+const TIER_PRICE_DISPLAY: Record<SubscriptionTier, string> = {
+  nigeria: '₦1,500',
+  family: '₦3,500',
+  global: '$5.99',
+};
+
+/** Naira tiers can show the DB's stored amount_naira (may differ from current
+ * pricing for grandfathered subscribers); Global is USD, so amount_naira never applies. */
+function formatSubscriptionPrice(subscription: ActiveSubscription): string {
+  if (subscription.tier === 'global') return TIER_PRICE_DISPLAY.global;
+  if (subscription.amountNaira != null) return `₦${subscription.amountNaira.toLocaleString()}`;
+  return TIER_PRICE_DISPLAY[subscription.tier];
+}
 
 const QUALITY_OPTIONS: { label: string; value: QualityLevel }[] = [
   { label: 'Low', value: 'low' },
@@ -99,7 +114,7 @@ export function ProfileScreen() {
     setIsPaying(true);
     popup.checkout({
       email: user.email,
-      amount: TIER_PRICE_NAIRA[DEFAULT_TIER],
+      amount: DEFAULT_TIER_PRICE_NAIRA,
       reference: `ariya_${user.id}_${Date.now()}`,
       onSuccess: () => {
         // BEFORE_LAUNCH_TODO: verify the transaction server-side (a Supabase
@@ -171,7 +186,7 @@ export function ProfileScreen() {
             {isPaying
               ? 'Opening checkout…'
               : activeSubscription
-                ? `₦${(activeSubscription.amountNaira ?? TIER_PRICE_NAIRA[activeSubscription.tier]).toLocaleString()}/month${
+                ? `${formatSubscriptionPrice(activeSubscription)}/month${
                     renewalDate ? ` · renews ${renewalDate}` : ''
                   } · Paystack`
                 : 'Manage your plan · ₦1,500/mo Nigeria · $5.99/mo Global'}
