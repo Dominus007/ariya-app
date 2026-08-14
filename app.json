@@ -34,7 +34,14 @@
       "expo-secure-store",
       "expo-status-bar",
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Ariya needs access to your photos so you can set a profile picture.",
+          "cameraPermission": "Ariya needs access to your camera so you can take a profile picture."
+        }
+      ]
     ]
   }
 }

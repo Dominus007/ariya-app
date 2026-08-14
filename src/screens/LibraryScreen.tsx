@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated from 'react-native-reanimated';
 
 import { MediaRow } from '../components/MediaRow';
+import { useContentBottomPadding } from '../hooks/useContentBottomPadding';
 import { useHideOnScroll } from '../hooks/useHideOnScroll';
 import { useSavedItems } from '../hooks/useLibrary';
 import type { RootStackParamList } from '../navigation/types';
@@ -23,6 +24,7 @@ export function LibraryScreen() {
   const { data: savedItems = [], isLoading, isError } = useSavedItems();
   const playQueue = usePlayerStore((state) => state.playQueue);
   const scrollHandler = useHideOnScroll();
+  const bottomPadding = useContentBottomPadding();
 
   const handlePress = (item: MediaItem, originRect: OriginRect) => {
     const index = savedItems.findIndex((candidate) => candidate.id === item.id);
@@ -45,7 +47,7 @@ export function LibraryScreen() {
         keyExtractor={(item: MediaItem) => item.id}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
-        contentContainerStyle={[styles.list, { paddingTop: insets.top + 76 }]}
+        contentContainerStyle={[styles.list, { paddingTop: insets.top + 76, paddingBottom: bottomPadding }]}
         ListHeaderComponent={<Text style={styles.heading}>Your Library</Text>}
         renderItem={({ item, index }: { item: MediaItem; index: number }) => (
           <MediaRow item={item} index={index} onPress={handlePress} />
@@ -79,7 +81,6 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: 20,
-    paddingBottom: 220,
   },
   emptyText: {
     fontFamily: fonts.bodyRegular,

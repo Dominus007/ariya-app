@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,11 +15,13 @@ import { fonts } from '../theme/typography';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 /**
- * Persistent bottom player bar — sits directly above the tab bar (or flush
- * with the bottom, in sidebar layout) whenever something is queued, and
- * stays mounted (state lives in usePlayerStore) across the Now Playing
- * sheet opening and closing. Tapping the track info reopens the full sheet;
- * transport controls work without leaving the tab.
+ * Persistent bottom player bar — Spotify-style: artwork, track info, a thin
+ * gold progress line across the very top of the card, play/pause and next.
+ * Sits directly above the tab bar (or flush with the bottom, in sidebar
+ * layout) whenever something is queued, and stays mounted (state lives in
+ * usePlayerStore) across the Now Playing sheet opening and closing. Tapping
+ * the track info reopens the full sheet; transport controls work without
+ * leaving the tab.
  *
  * `bottomOffset` is the full distance from the screen bottom to this bar's
  * bottom edge — the caller (TabNavigator) already knows whether that's the
@@ -32,10 +33,8 @@ export function MiniPlayerBar({ bottomOffset }: { bottomOffset: number }) {
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const togglePlaying = usePlayerStore((state) => state.togglePlaying);
   const next = usePlayerStore((state) => state.next);
-  const previous = usePlayerStore((state) => state.previous);
   const positionSeconds = usePlayerStore((state) => state.positionSeconds);
   const durationSeconds = usePlayerStore((state) => state.durationSeconds);
-  const [progressPressed, setProgressPressed] = useState(false);
 
   if (!current) return null;
 
@@ -51,19 +50,8 @@ export function MiniPlayerBar({ bottomOffset }: { bottomOffset: number }) {
       <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
       <View style={styles.tint} pointerEvents="none" />
 
-      <View style={styles.progressTrack}>
-        <Pressable
-          style={StyleSheet.absoluteFill}
-          onPressIn={() => setProgressPressed(true)}
-          onPressOut={() => setProgressPressed(false)}
-        >
-          <View
-            style={[
-              styles.progressFill,
-              { width: `${progress * 100}%`, backgroundColor: progressPressed ? colors.gold : colors.text },
-            ]}
-          />
-        </Pressable>
+      <View style={styles.progressTrack} pointerEvents="none">
+        <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
       </View>
 
       <View style={styles.row}>
@@ -83,15 +71,6 @@ export function MiniPlayerBar({ bottomOffset }: { bottomOffset: number }) {
 
         <View style={styles.controls}>
           <Pressable
-            hitSlop={8}
-            onPress={() => {
-              haptics.tap();
-              previous();
-            }}
-          >
-            <Ionicons name="play-skip-back" size={18} color={colors.text} />
-          </Pressable>
-          <Pressable
             style={styles.playButton}
             hitSlop={8}
             onPress={() => {
@@ -108,14 +87,8 @@ export function MiniPlayerBar({ bottomOffset }: { bottomOffset: number }) {
               next();
             }}
           >
-            <Ionicons name="play-skip-forward" size={18} color={colors.text} />
+            <Ionicons name="play-skip-forward" size={20} color={colors.text} />
           </Pressable>
-        </View>
-
-        <View style={styles.sideIcons}>
-          <Ionicons name="list-outline" size={16} color={colors.textMuted} />
-          <Ionicons name="chatbox-ellipses-outline" size={16} color={colors.textMuted} />
-          <Ionicons name="volume-medium-outline" size={16} color={colors.textMuted} />
         </View>
       </View>
     </View>
@@ -137,11 +110,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.navSurface,
   },
   progressTrack: {
-    height: 4,
+    height: 2,
     backgroundColor: colors.progressTrack,
   },
   progressFill: {
     height: '100%',
+    backgroundColor: colors.gold,
   },
   row: {
     flex: 1,
@@ -178,7 +152,7 @@ const styles = StyleSheet.create({
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 18,
   },
   playButton: {
     width: 32,
@@ -187,10 +161,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.text,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  sideIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
   },
 });

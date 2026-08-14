@@ -13,6 +13,7 @@ import Animated, {
 
 import { haptics } from '../lib/haptics';
 import { tabBarHidden } from '../lib/animatedUI';
+import { usePlayerStore } from '../store/usePlayerStore';
 import { colors } from '../theme/colors';
 import { TAB_BAR_HEIGHT } from '../theme/layout';
 import { fonts } from '../theme/typography';
@@ -39,6 +40,11 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const [barWidth, setBarWidth] = useState(0);
   const indicatorX = useSharedValue(0);
   const tabWidth = barWidth / Math.max(state.routes.length, 1);
+  // The bar must never disappear while the mini player is showing — the
+  // mini player's own position assumes the tab bar is always at its full
+  // height right below it, so scroll-hiding the bar independently would
+  // leave the mini player floating with a gap underneath it.
+  const hasCurrentTrack = usePlayerStore((playerState) => !!playerState.current());
 
   useEffect(() => {
     if (barWidth === 0) return;
@@ -49,10 +55,13 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.index, barWidth]);
 
-  const wrapperStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(tabBarHidden.value, [0, 1], [1, 0]),
-    transform: [{ translateY: interpolate(tabBarHidden.value, [0, 1], [0, 48]) }],
-  }));
+  const wrapperStyle = useAnimatedStyle(() => {
+    const hiddenAmount = hasCurrentTrack ? 0 : tabBarHidden.value;
+    return {
+      opacity: interpolate(hiddenAmount, [0, 1], [1, 0]),
+      transform: [{ translateY: interpolate(hiddenAmount, [0, 1], [0, 48]) }],
+    };
+  });
 
   const indicatorStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: indicatorX.value }],

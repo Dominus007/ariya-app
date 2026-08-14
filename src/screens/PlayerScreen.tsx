@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import Slider from '@react-native-community/slider';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import Animated, {
@@ -123,8 +124,8 @@ export function PlayerScreen() {
         </View>
       </GestureDetector>
 
-      <Pressable onPress={dismiss} style={styles.closeButton} hitSlop={12}>
-        <Ionicons name="chevron-down" size={26} color={colors.text} />
+      <Pressable onPress={dismiss} style={styles.closeButton} hitSlop={8}>
+        <Ionicons name="chevron-down" size={26} color={colors.gold} />
       </Pressable>
 
       <View style={styles.container}>
@@ -168,13 +169,44 @@ export function PlayerScreen() {
 function AudioSurface({ item }: { item: MediaItem }) {
   const positionSeconds = usePlayerStore((state) => state.positionSeconds);
   const durationSeconds = usePlayerStore((state) => state.durationSeconds);
+  const requestSeek = usePlayerStore((state) => state.requestSeek);
+
+  // While actively dragging, show the drag position instead of the (now
+  // stale) real playback position — avoids the thumb fighting the finger.
+  const [isScrubbing, setIsScrubbing] = useState(false);
+  const [scrubValue, setScrubValue] = useState(0);
+  const displayPosition = isScrubbing ? scrubValue : positionSeconds;
 
   return (
     <View style={styles.audioArt}>
       <ArtworkImage uri={item.artworkUrl} emoji={item.emoji} style={styles.artwork} emojiFontSize={96} />
-      <Text style={styles.progressText}>
-        {formatSeconds(positionSeconds)} / {formatSeconds(durationSeconds)}
-      </Text>
+
+      <View style={styles.seekBarWrap}>
+        <Slider
+          style={styles.slider}
+          minimumValue={0}
+          maximumValue={Math.max(durationSeconds, 0.1)}
+          value={displayPosition}
+          minimumTrackTintColor={colors.gold}
+          maximumTrackTintColor="rgba(255, 255, 255, 0.3)"
+          thumbTintColor={colors.text}
+          onSlidingStart={() => {
+            haptics.tap();
+            setScrubValue(positionSeconds);
+            setIsScrubbing(true);
+          }}
+          onValueChange={setScrubValue}
+          onSlidingComplete={(value) => {
+            setIsScrubbing(false);
+            haptics.press();
+            requestSeek(value);
+          }}
+        />
+        <View style={styles.timeRow}>
+          <Text style={styles.progressText}>{formatSeconds(displayPosition)}</Text>
+          <Text style={styles.progressText}>{formatSeconds(durationSeconds)}</Text>
+        </View>
+      </View>
     </View>
   );
 }
@@ -238,10 +270,13 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    top: 8,
-    right: 12,
+    top: 16,
+    left: 20,
     zIndex: 10,
-    padding: 8,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   container: {
     flex: 1,
@@ -291,8 +326,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  seekBarWrap: {
+    width: '100%',
+    paddingHorizontal: 4,
+  },
+  slider: {
+    width: '100%',
+    height: 24,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: -4,
+  },
   progressText: {
     fontFamily: fonts.bodyRegular,
+    fontSize: 12,
     color: colors.textMuted,
   },
   video: {

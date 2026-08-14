@@ -6,6 +6,7 @@ import Animated from 'react-native-reanimated';
 import { ContentRow } from '../components/ContentRow';
 import { Hero } from '../components/Hero';
 import { HeroSkeleton, SkeletonRow } from '../components/SkeletonRow';
+import { useContentBottomPadding } from '../hooks/useContentBottomPadding';
 import { useHideOnScroll } from '../hooks/useHideOnScroll';
 import { useMediaItemsQuery } from '../hooks/useMediaItems';
 import type { RootStackParamList } from '../navigation/types';
@@ -24,6 +25,7 @@ export function HomeScreen() {
   const mode = useModeStore((state) => state.mode);
   const playQueue = usePlayerStore((state) => state.playQueue);
   const scrollHandler = useHideOnScroll();
+  const bottomPadding = useContentBottomPadding();
 
   const isListen = mode === 'listen';
   const isWatch = mode === 'watch';
@@ -105,7 +107,7 @@ export function HomeScreen() {
       onScroll={scrollHandler}
       scrollEventThrottle={16}
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingBottom: bottomPadding }]}
     >
       <Hero feature={heroFeature} />
       {rows
@@ -140,7 +142,5 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
   },
-  content: {
-    paddingBottom: 220,
-  },
+  content: {},
 });

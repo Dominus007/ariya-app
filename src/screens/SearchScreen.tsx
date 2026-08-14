@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 
 import { MediaRow } from '../components/MediaRow';
+import { useContentBottomPadding } from '../hooks/useContentBottomPadding';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useHideOnScroll } from '../hooks/useHideOnScroll';
 import { useSearchMediaItems } from '../hooks/useMediaItems';
@@ -24,6 +25,7 @@ export function SearchScreen() {
   const navigation = useNavigation<Nav>();
   const playQueue = usePlayerStore((state) => state.playQueue);
   const scrollHandler = useHideOnScroll();
+  const bottomPadding = useContentBottomPadding();
   const [query, setQuery] = useState('');
   // Debounced so fast typing doesn't fire a request per keystroke — kinder
   // to slow/expensive mobile connections.
@@ -43,7 +45,7 @@ export function SearchScreen() {
         keyExtractor={(item: MediaItem) => item.id}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
-        contentContainerStyle={[styles.list, { paddingTop: insets.top + 76 }]}
+        contentContainerStyle={[styles.list, { paddingTop: insets.top + 76, paddingBottom: bottomPadding }]}
         ListHeaderComponent={
           <View style={styles.headerBlock}>
             <Text style={styles.heading}>Search</Text>
@@ -105,7 +107,6 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: 20,
-    paddingBottom: 220,
   },
   spinner: {
     marginTop: 24,

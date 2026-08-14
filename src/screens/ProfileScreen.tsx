@@ -5,15 +5,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePaystack } from 'react-native-paystack-webview';
 import { useQueryClient } from '@tanstack/react-query';
 
+import { AvatarPicker } from '../components/profile/AvatarPicker';
+import { EditableDisplayName } from '../components/profile/EditableDisplayName';
 import { SegmentedControl } from '../components/profile/SegmentedControl';
 import { SettingsCard, SettingsDivider } from '../components/profile/SettingsCard';
 import { ToggleRow } from '../components/profile/ToggleRow';
+import { useContentBottomPadding } from '../hooks/useContentBottomPadding';
 import { haptics } from '../lib/haptics';
 import type { Language, QualityLevel } from '../services/preferences';
 import type { ActiveSubscription, SubscriptionTier } from '../services/subscriptions';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/useAuthStore';
 import { useActiveSubscription } from '../hooks/useSubscription';
+import { useProfileRecord } from '../hooks/useProfile';
 import { useUpdatePreferences, useUserPreferences } from '../hooks/useUserPreferences';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
@@ -84,7 +88,9 @@ export function ProfileScreen() {
 
   const { data: activeSubscription } = useActiveSubscription();
   const { data: preferences } = useUserPreferences();
+  const { data: profileRecord } = useProfileRecord();
   const updatePreferences = useUpdatePreferences();
+  const bottomPadding = useContentBottomPadding(20);
 
   const [isPaying, setIsPaying] = useState(false);
 
@@ -101,7 +107,9 @@ export function ProfileScreen() {
     });
   }, []);
 
-  const displayName = deriveDisplayName(user?.email, user?.user_metadata);
+  // profiles.display_name (set via the editable name below) wins once a user
+  // has customized it; otherwise fall back to auth metadata / email prefix.
+  const displayName = profileRecord?.displayName || deriveDisplayName(user?.email, user?.user_metadata);
   const renewalDate = formatRenewalDate(activeSubscription?.currentPeriodEnd ?? null);
 
   const handleSubscribe = () => {
@@ -155,18 +163,14 @@ export function ProfileScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 76, paddingBottom: insets.bottom + 140 }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 76, paddingBottom: bottomPadding }]}
       showsVerticalScrollIndicator={false}
     >
       {/* Header card */}
       <View style={styles.headerCard}>
-        <View style={styles.avatar}>
-          <Ionicons name="headset" size={28} color={colors.textMuted} />
-        </View>
+        <AvatarPicker avatarUrl={profileRecord?.avatarUrl ?? null} />
         <View style={styles.headerText}>
-          <Text style={styles.name} numberOfLines={1}>
-            {displayName}
-          </Text>
+          <EditableDisplayName name={displayName} />
           <Text style={styles.email} numberOfLines={1}>
             {user?.email ?? 'Not signed in'}
           </Text>
@@ -300,27 +304,14 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 20,
   },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   headerText: {
     flex: 1,
-  },
-  name: {
-    fontFamily: fonts.displayExtraBold,
-    fontSize: 20,
-    color: colors.text,
-    marginBottom: 2,
   },
   email: {
     fontFamily: fonts.bodyRegular,
     fontSize: 12,
     color: colors.textMuted,
+    marginTop: 3,
     marginBottom: 8,
   },
   tierBadge: {

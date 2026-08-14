@@ -20,6 +20,9 @@ interface PlayerState {
    * and the full sheet reflect the same live progress. See PlaybackEngine. */
   positionSeconds: number;
   durationSeconds: number;
+  /** Set by the seek bar on release; PlaybackEngine (audio) / VideoSurface
+   * (video) watch this and perform the actual seek, then clear it. */
+  pendingSeekSeconds: number | null;
   current: () => MediaItem | null;
   /** Replace the queue and start playing at `startIndex` (e.g. tapping a track in a list). */
   playQueue: (items: MediaItem[], startIndex?: number, originRect?: OriginRect) => void;
@@ -30,6 +33,8 @@ interface PlayerState {
   previous: () => void;
   clear: () => void;
   setProgress: (positionSeconds: number, durationSeconds: number) => void;
+  requestSeek: (seconds: number) => void;
+  clearSeekRequest: () => void;
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
@@ -39,6 +44,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   originRect: null,
   positionSeconds: 0,
   durationSeconds: 0,
+  pendingSeekSeconds: null,
 
   current: () => {
     const { queue, currentIndex } = get();
@@ -53,6 +59,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       originRect: originRect ?? null,
       positionSeconds: 0,
       durationSeconds: 0,
+      pendingSeekSeconds: null,
     }),
 
   play: () => set({ isPlaying: true }),
@@ -62,16 +69,34 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   next: () =>
     set((state) => {
       if (state.currentIndex >= state.queue.length - 1) return state;
-      return { currentIndex: state.currentIndex + 1, isPlaying: true, positionSeconds: 0, durationSeconds: 0 };
+      return {
+        currentIndex: state.currentIndex + 1,
+        isPlaying: true,
+        positionSeconds: 0,
+        durationSeconds: 0,
+        pendingSeekSeconds: null,
+      };
     }),
 
   previous: () =>
     set((state) => {
       if (state.currentIndex <= 0) return state;
-      return { currentIndex: state.currentIndex - 1, isPlaying: true, positionSeconds: 0, durationSeconds: 0 };
+      return {
+        currentIndex: state.currentIndex - 1,
+        isPlaying: true,
+        positionSeconds: 0,
+        durationSeconds: 0,
+        pendingSeekSeconds: null,
+      };
     }),
 
-  clear: () => set({ queue: [], currentIndex: -1, isPlaying: false, positionSeconds: 0, durationSeconds: 0 }),
+  clear: () =>
+    set({ queue: [], currentIndex: -1, isPlaying: false, positionSeconds: 0, durationSeconds: 0, pendingSeekSeconds: null }),
 
   setProgress: (positionSeconds, durationSeconds) => set({ positionSeconds, durationSeconds }),
+
+  // Optimistically reflect the target position immediately (feels instant),
+  // then the actual player performs the seek and clears the request.
+  requestSeek: (seconds) => set({ pendingSeekSeconds: seconds, positionSeconds: seconds }),
+  clearSeekRequest: () => set({ pendingSeekSeconds: null }),
 }));

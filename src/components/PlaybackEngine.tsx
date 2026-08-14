@@ -20,6 +20,7 @@ export function PlaybackEngine() {
   const current = usePlayerStore((state) => state.current());
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const setProgress = usePlayerStore((state) => state.setProgress);
+  const pendingSeekSeconds = usePlayerStore((state) => state.pendingSeekSeconds);
 
   const isAudio = !!current && (current.kind === 'song' || current.kind === 'podcast');
   const player = useAudioPlayer(null);
@@ -71,6 +72,14 @@ export function PlaybackEngine() {
       usePlayerStore.getState().next();
     }
   }, [isAudio, status.didJustFinish]);
+
+  // The full-screen seek bar releases a target position here — perform the
+  // actual seek, then clear it so this doesn't refire on unrelated updates.
+  useEffect(() => {
+    if (!isAudio || pendingSeekSeconds == null) return;
+    player.seekTo(pendingSeekSeconds);
+    usePlayerStore.getState().clearSeekRequest();
+  }, [isAudio, pendingSeekSeconds, player]);
 
   return null;
 }

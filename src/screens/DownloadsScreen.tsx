@@ -7,6 +7,7 @@ import { DownloadProgressBanner } from '../components/downloads/DownloadProgress
 import { DownloadedTrackRow } from '../components/downloads/DownloadedTrackRow';
 import { DownloadedVideoRow } from '../components/downloads/DownloadedVideoRow';
 import { StorageUsageBar } from '../components/downloads/StorageUsageBar';
+import { useContentBottomPadding } from '../hooks/useContentBottomPadding';
 import { haptics } from '../lib/haptics';
 import { useDownloadsStore } from '../store/useDownloadsStore';
 import { colors } from '../theme/colors';
@@ -15,6 +16,7 @@ import { fonts } from '../theme/typography';
 export function DownloadsScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const bottomPadding = useContentBottomPadding();
   const audioDownloads = useDownloadsStore((state) => state.audioDownloads);
   const videoDownloads = useDownloadsStore((state) => state.videoDownloads);
   const activeDownload = useDownloadsStore((state) => state.activeDownload);
@@ -46,7 +48,7 @@ export function DownloadsScreen() {
       ) : null}
 
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + 76 }]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 76, paddingBottom: bottomPadding }]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.heading}>Downloads</Text>
@@ -125,7 +127,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 20,
-    paddingBottom: 220,
   },
   heading: {
     fontFamily: fonts.displayExtraBold,
