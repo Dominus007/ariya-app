@@ -1,5 +1,6 @@
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ArtworkImage } from '../ArtworkImage';
 import { haptics } from '../../lib/haptics';
 import type { DownloadedItem } from '../../store/useDownloadsStore';
 import { colors } from '../../theme/colors';
@@ -36,9 +37,7 @@ export function DownloadedVideoRow({ download, onDelete }: { download: Downloade
 
   return (
     <Pressable style={styles.row} onLongPress={handleLongPress}>
-      <View style={styles.thumb}>
-        <Text style={styles.emoji}>{item.emoji}</Text>
-      </View>
+      <ArtworkImage uri={item.artworkUrl} emoji={item.emoji} style={styles.thumb} emojiFontSize={16} />
       <View style={styles.textBlock}>
         <Text style={styles.title} numberOfLines={1}>
           {item.title}
@@ -68,12 +67,6 @@ const styles = StyleSheet.create({
     width: 60,
     height: 34,
     borderRadius: 6,
-    backgroundColor: colors.cardSurface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emoji: {
-    fontSize: 16,
   },
   textBlock: {
     flex: 1,

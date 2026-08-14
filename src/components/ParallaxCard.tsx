@@ -12,6 +12,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
+import { ArtworkImage } from './ArtworkImage';
 import { haptics } from '../lib/haptics';
 import type { OriginRect } from '../store/usePlayerStore';
 import { colors } from '../theme/colors';
@@ -108,7 +109,15 @@ export function ParallaxCard({
     >
       <Animated.View style={[styles.card, { width: cardWidth, height: cardHeight }, cardStyle]}>
         <Animated.View style={[styles.artworkInner, artworkStyle]}>
-          <Text style={styles.emoji}>{item.emoji}</Text>
+          <ArtworkImage
+            uri={item.artworkUrl}
+            emoji={item.emoji}
+            // Wider than the card + negative left offset, so translating this
+            // ±PARALLAX_RANGE during scroll never reveals an edge/gap — only
+            // mattered once this became a real photo instead of a centered emoji.
+            style={[styles.artworkImage, { width: cardWidth + PARALLAX_RANGE * 2, left: -PARALLAX_RANGE }]}
+            emojiFontSize={40}
+          />
         </Animated.View>
 
         {showLiveBadge ? (
@@ -174,8 +183,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emoji: {
-    fontSize: 40,
+  artworkImage: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
   },
   overlay: {
     ...StyleSheet.absoluteFill,

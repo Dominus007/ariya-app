@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -30,6 +30,8 @@ export function Hero({ feature }: { feature: MediaItem }) {
   const containerRef = useRef<View>(null);
   const isMovie = feature.kind === 'movie';
   const isSaved = savedItems.some((saved) => saved.id === feature.id);
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = !!feature.artworkUrl && !imageFailed;
 
   // Slow pulsing glow, explicitly via RN's core Animated (not Reanimated) per spec.
   const pulse = useRef(new Animated.Value(0)).current;
@@ -44,6 +46,13 @@ export function Hero({ feature }: { feature: MediaItem }) {
     loop.start();
     return () => loop.stop();
   }, [pulse]);
+
+  // Hero stays mounted across Listen/Watch mode switches with a new
+  // `feature` each time — don't let a previous item's failed image state
+  // stick around and hide a perfectly good new one.
+  useEffect(() => {
+    setImageFailed(false);
+  }, [feature.id]);
 
   const glowScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.18] });
   const glowOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] });
@@ -63,7 +72,22 @@ export function Hero({ feature }: { feature: MediaItem }) {
 
   return (
     <View style={styles.container} ref={containerRef} collapsable={false}>
-      <LinearGradient colors={['#1a0a05', '#2d1206', '#3d1a0a']} style={StyleSheet.absoluteFill} />
+      {showImage ? (
+        <Image
+          source={{ uri: feature.artworkUrl }}
+          style={StyleSheet.absoluteFill}
+          resizeMode="cover"
+          onError={() => setImageFailed(true)}
+        />
+      ) : null}
+
+      {/* Dark scrim over a real photo for text legibility; the full brand
+          gradient stands in as the background when there's no artwork. */}
+      <LinearGradient
+        colors={showImage ? ['transparent', 'rgba(8, 8, 6, 0.55)', colors.background] : ['#1a0a05', '#2d1206', '#3d1a0a']}
+        locations={showImage ? [0, 0.55, 1] : undefined}
+        style={StyleSheet.absoluteFill}
+      />
 
       {/* RN has no radial-gradient primitive, so the glow is layered concentric
           circles anchored off the top-right corner — a close approximation. */}

@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 
+import { ArtworkImage } from './ArtworkImage';
 import { haptics } from '../lib/haptics';
 import type { RootStackParamList } from '../navigation/types';
 import { usePlayerStore } from '../store/usePlayerStore';
@@ -67,9 +68,7 @@ export function MiniPlayerBar({ bottomOffset }: { bottomOffset: number }) {
 
       <View style={styles.row}>
         <Pressable style={styles.trackInfo} onPress={openSheet}>
-          <View style={styles.thumb}>
-            <Text style={styles.emoji}>{current.emoji}</Text>
-          </View>
+          <ArtworkImage uri={current.artworkUrl} emoji={current.emoji} style={styles.thumb} emojiFontSize={22} />
           <View style={styles.textBlock}>
             <Text style={styles.title} numberOfLines={1}>
               {current.title}
@@ -161,12 +160,6 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 8,
-    backgroundColor: colors.cardSurface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emoji: {
-    fontSize: 22,
   },
   textBlock: {
     flex: 1,

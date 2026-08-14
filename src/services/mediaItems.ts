@@ -34,8 +34,11 @@ export function mapMediaItemRow(row: MediaItemRow): MediaItem {
     description: row.description ?? undefined,
     genreBadge: row.genre_badge ?? undefined,
     emoji: row.emoji ?? FALLBACK_EMOJI_BY_KIND[row.kind],
-    artworkUrl: row.artwork_url ?? undefined,
-    streamUrl: row.stream_url,
+    // .trim() defends against stray whitespace/newlines from pasting URLs
+    // into Supabase's Table Editor (seen in production data — a trailing
+    // \r\n silently breaks the image/stream request otherwise).
+    artworkUrl: row.artwork_url?.trim() || undefined,
+    streamUrl: row.stream_url.trim(),
     durationSeconds: row.duration_seconds ?? undefined,
     isLive: row.is_live,
   };

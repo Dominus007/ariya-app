@@ -14,6 +14,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { ArtworkImage } from '../components/ArtworkImage';
 import { haptics } from '../lib/haptics';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { colors } from '../theme/colors';
@@ -170,9 +171,7 @@ function AudioSurface({ item }: { item: MediaItem }) {
 
   return (
     <View style={styles.audioArt}>
-      <View style={styles.artwork}>
-        <Text style={styles.artworkEmoji}>{item.emoji}</Text>
-      </View>
+      <ArtworkImage uri={item.artworkUrl} emoji={item.emoji} style={styles.artwork} emojiFontSize={96} />
       <Text style={styles.progressText}>
         {formatSeconds(positionSeconds)} / {formatSeconds(durationSeconds)}
       </Text>
@@ -291,9 +290,6 @@ const styles = StyleSheet.create({
     borderColor: colors.cardBorder,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  artworkEmoji: {
-    fontSize: 96,
   },
   progressText: {
     fontFamily: fonts.bodyRegular,

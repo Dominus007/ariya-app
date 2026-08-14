@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { ArtworkImage } from './ArtworkImage';
 import { EqualizerBars } from './EqualizerBars';
 import { haptics } from '../lib/haptics';
 import { useSavedItems, useToggleSaved } from '../hooks/useLibrary';
@@ -64,9 +65,7 @@ export function MediaRow({ item, index, onPress }: MediaRowProps) {
         )}
       </View>
 
-      <View style={styles.thumb}>
-        <Text style={styles.emoji}>{item.emoji}</Text>
-      </View>
+      <ArtworkImage uri={item.artworkUrl} emoji={item.emoji} style={styles.thumb} emojiFontSize={20} />
 
       <View style={styles.textBlock}>
         <Text style={[styles.title, isCurrentTrack && styles.titleActive]} numberOfLines={1}>
@@ -120,12 +119,6 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 8,
-    backgroundColor: colors.cardSurface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emoji: {
-    fontSize: 20,
   },
   textBlock: {
     flex: 1,

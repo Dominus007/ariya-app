@@ -1,5 +1,6 @@
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ArtworkImage } from '../ArtworkImage';
 import { haptics } from '../../lib/haptics';
 import type { DownloadedItem } from '../../store/useDownloadsStore';
 import { colors } from '../../theme/colors';
@@ -25,9 +26,7 @@ export function DownloadedTrackRow({ download, onDelete }: { download: Downloade
 
   return (
     <Pressable style={styles.row} onLongPress={handleLongPress}>
-      <View style={styles.thumb}>
-        <Text style={styles.emoji}>{item.emoji}</Text>
-      </View>
+      <ArtworkImage uri={item.artworkUrl} emoji={item.emoji} style={styles.thumb} emojiFontSize={18} />
       <View style={styles.textBlock}>
         <Text style={styles.title} numberOfLines={1}>
           {item.title}
@@ -54,12 +53,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 8,
-    backgroundColor: colors.cardSurface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emoji: {
-    fontSize: 18,
   },
   textBlock: {
     flex: 1,
