@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
-import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { runOnJS } from 'react-native-reanimated';
 
 import { haptics } from '../lib/haptics';
@@ -40,6 +41,21 @@ export function ShortsPlayerScreen() {
 
   const { data: savedItems = [] } = useSavedItems();
   const toggleSaved = useToggleSaved();
+
+  // Lock to portrait for the duration of this screen — Shorts are always
+  // vertical, regardless of how the device is held elsewhere in the app.
+  // No-op on web: browsers don't expose orientation lock, so the web-only
+  // maxWidth frame below (see styles.webFrame) simulates a phone portrait
+  // screen instead.
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {
+      // Best-effort — an unsupported device shouldn't block playback.
+    });
+    return () => {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.DEFAULT).catch(() => {});
+    };
+  }, []);
 
   const dismiss = () => {
     haptics.tap();
@@ -79,11 +95,13 @@ export function ShortsPlayerScreen() {
 
   if (!current) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.emptyText}>Nothing queued yet.</Text>
-        <Pressable onPress={dismiss} style={styles.emptyDismiss}>
-          <Text style={styles.emptyDismissText}>Close</Text>
-        </Pressable>
+      <View style={styles.webOuter}>
+        <View style={[styles.center, Platform.OS === 'web' && styles.webFrame]}>
+          <Text style={styles.emptyText}>Nothing queued yet.</Text>
+          <Pressable onPress={dismiss} style={styles.emptyDismiss}>
+            <Text style={styles.emptyDismissText}>Close</Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
@@ -103,50 +121,56 @@ export function ShortsPlayerScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <GestureDetector gesture={composedGesture}>
-        <View style={styles.videoLayer}>
-          <ShortVideoSurface key={current.id} item={current} isPlaying={isPlaying} />
-        </View>
-      </GestureDetector>
+    <View style={styles.webOuter}>
+      <View style={[styles.container, Platform.OS === 'web' && styles.webFrame]}>
+        <GestureDetector gesture={composedGesture}>
+          <View style={styles.videoLayer}>
+            <ShortVideoSurface key={current.id} item={current} isPlaying={isPlaying} />
+          </View>
+        </GestureDetector>
 
-      {!isPlaying ? (
-        <View style={styles.pauseOverlay} pointerEvents="none">
-          <Ionicons name="play" size={64} color="rgba(255, 255, 255, 0.85)" style={styles.pauseIconOffset} />
-        </View>
-      ) : null}
-
-      <Pressable onPress={dismiss} style={[styles.closeButton, { top: insets.top + 12 }]} hitSlop={8}>
-        <Ionicons name="chevron-down" size={26} color={colors.text} />
-      </Pressable>
-
-      <View style={[styles.actionStack, { bottom: insets.bottom + 88 }]} pointerEvents="box-none">
-        <Pressable onPress={handleToggleSave} style={styles.actionButton} hitSlop={10}>
-          <Ionicons name={isSaved ? 'heart' : 'heart-outline'} size={30} color={isSaved ? colors.gold : colors.text} />
-          <Text style={styles.actionLabel}>Like</Text>
-        </Pressable>
-        <Pressable onPress={handleShare} style={styles.actionButton} hitSlop={10}>
-          <Ionicons name="paper-plane-outline" size={28} color={colors.text} />
-          <Text style={styles.actionLabel}>Share</Text>
-        </Pressable>
-        <Pressable onPress={handleToggleSave} style={styles.actionButton} hitSlop={10}>
-          <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={28} color={isSaved ? colors.gold : colors.text} />
-          <Text style={styles.actionLabel}>Save</Text>
-        </Pressable>
-      </View>
-
-      <View style={[styles.metaBlock, { bottom: insets.bottom + 24 }]} pointerEvents="none">
-        <Text style={styles.title} numberOfLines={1}>
-          {current.title}
-        </Text>
-        {current.subtitle ? (
-          <Text style={styles.subtitle} numberOfLines={1}>
-            {current.subtitle}
-          </Text>
+        {!isPlaying ? (
+          <View style={styles.pauseOverlay} pointerEvents="none">
+            <Ionicons name="play" size={64} color="rgba(255, 255, 255, 0.85)" style={styles.pauseIconOffset} />
+          </View>
         ) : null}
-      </View>
 
-      <ProgressLine />
+        <Pressable onPress={dismiss} style={[styles.closeButton, { top: insets.top + 12 }]} hitSlop={8}>
+          <Ionicons name="chevron-down" size={26} color={colors.text} />
+        </Pressable>
+
+        <View style={[styles.actionStack, { bottom: insets.bottom + 88 }]} pointerEvents="box-none">
+          <Pressable onPress={handleToggleSave} style={styles.actionButton} hitSlop={10}>
+            <Ionicons name={isSaved ? 'heart' : 'heart-outline'} size={30} color={isSaved ? colors.gold : colors.text} />
+            <Text style={styles.actionLabel}>Like</Text>
+          </Pressable>
+          <Pressable onPress={handleShare} style={styles.actionButton} hitSlop={10}>
+            <Ionicons name="paper-plane-outline" size={28} color={colors.text} />
+            <Text style={styles.actionLabel}>Share</Text>
+          </Pressable>
+          <Pressable onPress={handleToggleSave} style={styles.actionButton} hitSlop={10}>
+            <Ionicons
+              name={isSaved ? 'bookmark' : 'bookmark-outline'}
+              size={28}
+              color={isSaved ? colors.gold : colors.text}
+            />
+            <Text style={styles.actionLabel}>Save</Text>
+          </Pressable>
+        </View>
+
+        <View style={[styles.metaBlock, { bottom: insets.bottom + 24 }]} pointerEvents="none">
+          <Text style={styles.title} numberOfLines={1}>
+            {current.title}
+          </Text>
+          {current.subtitle ? (
+            <Text style={styles.subtitle} numberOfLines={1}>
+              {current.subtitle}
+            </Text>
+          ) : null}
+        </View>
+
+        <ProgressLine />
+      </View>
     </View>
   );
 }
@@ -173,6 +197,9 @@ function ShortVideoSurface({ item, isPlaying }: { item: MediaItem; isPlaying: bo
     return () => clearInterval(interval);
   }, [player, setProgress]);
 
+  // contentFit="cover" (expo-video's equivalent of resizeMode) fills the
+  // full portrait frame edge-to-edge with no letterboxing, cropping the
+  // source instead of pillar/letterboxing it to a 16:9 shape.
   return <VideoView player={player} style={styles.video} contentFit="cover" nativeControls={false} />;
 }
 
@@ -189,15 +216,35 @@ function ProgressLine() {
 }
 
 const styles = StyleSheet.create({
+  // Full-bleed black backdrop behind the phone-sized frame — on native this
+  // is invisible (the frame fills it exactly); on web, anything wider than
+  // webFrame's 400px cap shows as black bars either side, simulating a
+  // portrait phone screen on a wide desktop browser.
+  webOuter: {
+    flex: 1,
+    backgroundColor: '#000000',
+    alignItems: 'center',
+  },
+  // Web only — screen orientation lock (see the useEffect above) doesn't
+  // exist in browsers, so this is how Shorts stays portrait-shaped on web.
+  webFrame: {
+    maxWidth: 400,
+    width: '100%',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    width: '100%',
+    backgroundColor: '#000000',
   },
   videoLayer: {
     ...StyleSheet.absoluteFill,
   },
   video: {
-    flex: 1,
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
   },
   pauseOverlay: {
     ...StyleSheet.absoluteFill,

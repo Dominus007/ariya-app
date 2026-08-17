@@ -1,4 +1,4 @@
-import { FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { haptics } from '../../lib/haptics';
 import { ShortsCard } from './ShortsCard';
@@ -9,8 +9,10 @@ import type { MediaItem } from '../../types/content';
 
 const SHORTS_GAP = 8;
 const ROW_PADDING = 16;
-// Sized so ~3 cards are visible at once with a peek of the 4th, portrait 9:16.
-const VISIBLE_CARDS = 3.2;
+// Fixed portrait 9:16 size — ~120 wide fits 3 fully visible in the row with
+// a peek of a 4th on most phone widths.
+const CARD_WIDTH = 120;
+const CARD_HEIGHT = Math.round(CARD_WIDTH * (16 / 9)); // ≈213
 
 interface ShortsRowProps {
   title: string;
@@ -25,10 +27,6 @@ interface ShortsRowProps {
  * ContentRow) since the card shape, not just its size, is different.
  */
 export function ShortsRow({ title, items, onPressItem }: ShortsRowProps) {
-  const { width: screenWidth } = useWindowDimensions();
-  const cardWidth = (screenWidth - ROW_PADDING * 2 - SHORTS_GAP * 2) / VISIBLE_CARDS;
-  const cardHeight = cardWidth * (16 / 9);
-
   return (
     <View style={styles.row}>
       <View style={styles.header}>
@@ -45,7 +43,7 @@ export function ShortsRow({ title, items, onPressItem }: ShortsRowProps) {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
-          <ShortsCard item={item} cardWidth={cardWidth} cardHeight={cardHeight} onPress={onPressItem} />
+          <ShortsCard item={item} cardWidth={CARD_WIDTH} cardHeight={CARD_HEIGHT} onPress={onPressItem} />
         )}
       />
     </View>

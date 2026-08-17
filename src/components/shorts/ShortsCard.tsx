@@ -95,6 +95,9 @@ export function ShortsCard({ item, cardWidth, cardHeight, onPress }: ShortsCardP
 
 const styles = StyleSheet.create({
   card: {
+    // 9:16 portrait, not 16:9 — width/height are also passed explicitly by
+    // ShortsRow, but aspectRatio is here too as a safety net.
+    aspectRatio: 9 / 16,
     borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: colors.cardSurface,
