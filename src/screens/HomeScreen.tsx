@@ -6,6 +6,7 @@ import Animated from 'react-native-reanimated';
 import { ContentRow } from '../components/ContentRow';
 import { Hero } from '../components/Hero';
 import { HeroSkeleton, SkeletonRow } from '../components/SkeletonRow';
+import { ShortsRow } from '../components/shorts/ShortsRow';
 import { useContentBottomPadding } from '../hooks/useContentBottomPadding';
 import { useHideOnScroll } from '../hooks/useHideOnScroll';
 import { useMediaItemsQuery } from '../hooks/useMediaItems';
@@ -19,6 +20,10 @@ import type { MediaItem } from '../types/content';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const VIDEO_CARD = { cardWidth: 220, cardHeight: 124 }; // ~16:9
+
+type Row =
+  | { type: 'content'; title: string; items: MediaItem[]; cardWidth: number; cardHeight: number; showMeta: boolean }
+  | { type: 'shorts'; title: string; items: MediaItem[] };
 
 export function HomeScreen() {
   const navigation = useNavigation<Nav>();
@@ -41,27 +46,46 @@ export function HomeScreen() {
   const bollywood = useMediaItemsQuery('movie', 'bollywood', isWatch);
   const kdrama = useMediaItemsQuery('movie', 'kdrama', isWatch);
   const musicVideos = useMediaItemsQuery('video', undefined, isWatch);
+  const shorts = useMediaItemsQuery('video', 'shorts', isWatch);
   const liveSport = useMediaItemsQuery('live-sport', undefined, isWatch);
 
-  const rows = isListen
+  const rows: Row[] = isListen
     ? [
-        { title: 'Made for you', items: songs.data ?? [], cardWidth: 132, cardHeight: 132, showMeta: false },
-        { title: 'Podcasts', items: podcasts.data ?? [], cardWidth: 132, cardHeight: 132, showMeta: false },
+        {
+          type: 'content',
+          title: 'Made for you',
+          items: songs.data ?? [],
+          cardWidth: 132,
+          cardHeight: 132,
+          showMeta: false,
+        },
+        {
+          type: 'content',
+          title: 'Podcasts',
+          items: podcasts.data ?? [],
+          cardWidth: 132,
+          cardHeight: 132,
+          showMeta: false,
+        },
       ]
     : [
         // Nollywood films lead — Watch mode is a movie platform first.
-        { title: 'New Nollywood 🎬', items: nollywood.data ?? [], ...VIDEO_CARD, showMeta: true },
-        { title: 'Hollywood 🎥', items: hollywood.data ?? [], ...VIDEO_CARD, showMeta: true },
-        { title: 'Bollywood 🎭', items: bollywood.data ?? [], ...VIDEO_CARD, showMeta: true },
-        { title: 'K-Drama & Asian 🎌', items: kdrama.data ?? [], ...VIDEO_CARD, showMeta: true },
+        { type: 'content', title: 'New Nollywood 🎬', items: nollywood.data ?? [], ...VIDEO_CARD, showMeta: true },
+        { type: 'content', title: 'Hollywood 🎥', items: hollywood.data ?? [], ...VIDEO_CARD, showMeta: true },
+        { type: 'content', title: 'Bollywood 🎭', items: bollywood.data ?? [], ...VIDEO_CARD, showMeta: true },
+        { type: 'content', title: 'K-Drama & Asian 🎌', items: kdrama.data ?? [], ...VIDEO_CARD, showMeta: true },
         // Music videos are a secondary category — buried at position 5, not the top.
-        { title: 'Music Videos 🎵', items: musicVideos.data ?? [], ...VIDEO_CARD, showMeta: true },
-        { title: 'Live Sports ⚽', items: liveSport.data ?? [], ...VIDEO_CARD, showMeta: true },
+        { type: 'content', title: 'Music Videos 🎵', items: musicVideos.data ?? [], ...VIDEO_CARD, showMeta: true },
+        // Shorts sit between Music Videos and Live Sports, rendered with a
+        // different card shape entirely (portrait, see ShortsRow) — not a
+        // ContentRow variant.
+        { type: 'shorts', title: 'Shorts ⚡', items: shorts.data ?? [] },
+        { type: 'content', title: 'Live Sports ⚽', items: liveSport.data ?? [], ...VIDEO_CARD, showMeta: true },
       ];
 
   const relevantQueries = isListen
     ? [songs, podcasts]
-    : [nollywood, hollywood, bollywood, kdrama, musicVideos, liveSport];
+    : [nollywood, hollywood, bollywood, kdrama, musicVideos, shorts, liveSport];
   const isLoading = relevantQueries.some((query) => query.isLoading);
   const isError = relevantQueries.some((query) => query.isError);
 
@@ -73,6 +97,12 @@ export function HomeScreen() {
     const index = rowItems.findIndex((candidate) => candidate.id === item.id);
     playQueue(rowItems, index === -1 ? 0 : index, originRect);
     navigation.navigate('Player');
+  };
+
+  const handlePressShort = (rowItems: MediaItem[]) => (item: MediaItem, originRect: OriginRect) => {
+    const index = rowItems.findIndex((candidate) => candidate.id === item.id);
+    playQueue(rowItems, index === -1 ? 0 : index, originRect);
+    navigation.navigate('ShortsPlayer');
   };
 
   if (isLoading) {
@@ -112,17 +142,21 @@ export function HomeScreen() {
       <Hero feature={heroFeature} />
       {rows
         .filter((row) => row.items.length > 0)
-        .map((row) => (
-          <ContentRow
-            key={row.title}
-            title={row.title}
-            items={row.items}
-            cardWidth={row.cardWidth}
-            cardHeight={row.cardHeight}
-            showMeta={row.showMeta}
-            onPressItem={handlePressItem(row.items)}
-          />
-        ))}
+        .map((row) =>
+          row.type === 'shorts' ? (
+            <ShortsRow key={row.title} title={row.title} items={row.items} onPressItem={handlePressShort(row.items)} />
+          ) : (
+            <ContentRow
+              key={row.title}
+              title={row.title}
+              items={row.items}
+              cardWidth={row.cardWidth}
+              cardHeight={row.cardHeight}
+              showMeta={row.showMeta}
+              onPressItem={handlePressItem(row.items)}
+            />
+          )
+        )}
     </Animated.ScrollView>
   );
 }

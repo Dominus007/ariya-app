@@ -20,6 +20,9 @@ export interface MediaItem {
   description?: string;
   /** e.g. "NOLLYWOOD · DRAMA" — used by the Hero's eyebrow when this item is featured. */
   genreBadge?: string;
+  /** e.g. 'nollywood', 'shorts' — only set for movie/video kinds. Used to route
+   * a shorts video to the vertical ShortsPlayer instead of the regular Player. */
+  category?: string;
 }
 
 export interface Playlist {

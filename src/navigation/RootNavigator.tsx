@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { LandingScreen } from '../screens/LandingScreen';
 import { PlayerScreen } from '../screens/PlayerScreen';
+import { ShortsPlayerScreen } from '../screens/ShortsPlayerScreen';
 import { SignInScreen } from '../screens/SignInScreen';
 import { SignUpScreen } from '../screens/SignUpScreen';
 import { SplashScreen } from '../screens/SplashScreen';
@@ -42,6 +43,19 @@ export function RootNavigator() {
               // rounded top corners during the slide; PlayerScreen implements
               // its own drag-to-dismiss instead of the native swipe gesture.
               presentation: 'transparentModal',
+              animation: 'slide_from_bottom',
+              gestureEnabled: false,
+            }}
+          />
+          <Stack.Screen
+            name="ShortsPlayer"
+            component={ShortsPlayerScreen}
+            options={{
+              // A true full-screen cover (not the rounded transparent sheet
+              // Player uses) — Shorts are edge-to-edge vertical video, and
+              // it owns its own up/down swipe gesture instead of the
+              // native dismiss swipe.
+              presentation: 'fullScreenModal',
               animation: 'slide_from_bottom',
               gestureEnabled: false,
             }}

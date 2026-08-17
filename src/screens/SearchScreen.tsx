@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 
 import { MediaRow } from '../components/MediaRow';
+import { haptics } from '../lib/haptics';
 import { useContentBottomPadding } from '../hooks/useContentBottomPadding';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useHideOnScroll } from '../hooks/useHideOnScroll';
 import { useSearchMediaItems } from '../hooks/useMediaItems';
 import type { RootStackParamList } from '../navigation/types';
+import type { SearchFilter } from '../services/mediaItems';
 import { usePlayerStore, type OriginRect } from '../store/usePlayerStore';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
@@ -20,6 +22,15 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<MediaItem>);
 
+const FILTERS: { key: SearchFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'music', label: 'Music' },
+  { key: 'videos', label: 'Videos' },
+  { key: 'podcasts', label: 'Podcasts' },
+  { key: 'sports', label: 'Sports' },
+  { key: 'shorts', label: 'Shorts ⚡' },
+];
+
 export function SearchScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
@@ -27,15 +38,24 @@ export function SearchScreen() {
   const scrollHandler = useHideOnScroll();
   const bottomPadding = useContentBottomPadding();
   const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<SearchFilter>('all');
   // Debounced so fast typing doesn't fire a request per keystroke — kinder
   // to slow/expensive mobile connections.
   const debouncedQuery = useDebouncedValue(query, 300);
-  const { data: results = [], isLoading, isError } = useSearchMediaItems(debouncedQuery);
+  const { data: results = [], isLoading, isError } = useSearchMediaItems(debouncedQuery, filter);
 
   const handlePress = (item: MediaItem, originRect: OriginRect) => {
     const index = results.findIndex((candidate) => candidate.id === item.id);
     playQueue(results, index === -1 ? 0 : index, originRect);
-    navigation.navigate('Player');
+    // Shorts can surface even under "All"/"Videos" — route those to the
+    // dedicated vertical player instead of the regular landscape sheet.
+    const isShort = item.kind === 'video' && item.category === 'shorts';
+    navigation.navigate(isShort ? 'ShortsPlayer' : 'Player');
+  };
+
+  const handleSelectFilter = (next: SearchFilter) => {
+    haptics.tap();
+    setFilter(next);
   };
 
   return (
@@ -55,6 +75,24 @@ export function SearchScreen() {
               placeholder="Songs, podcasts, videos, live sport..."
               placeholderTextColor={colors.textMuted}
               style={styles.input}
+            />
+            <FlatList
+              data={FILTERS}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item) => item.key}
+              contentContainerStyle={styles.filterList}
+              renderItem={({ item }) => {
+                const active = item.key === filter;
+                return (
+                  <Pressable
+                    onPress={() => handleSelectFilter(item.key)}
+                    style={[styles.filterPill, active && styles.filterPillActive]}
+                  >
+                    <Text style={[styles.filterLabel, active && styles.filterLabelActive]}>{item.label}</Text>
+                  </Pressable>
+                );
+              }}
             />
           </View>
         }
@@ -103,7 +141,33 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontFamily: fonts.bodyMedium,
     fontSize: 14,
-    marginBottom: 16,
+    marginBottom: 14,
+  },
+  filterList: {
+    gap: 8,
+    paddingBottom: 4,
+    marginBottom: 4,
+  },
+  filterPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterPillActive: {
+    backgroundColor: colors.gold,
+    borderColor: colors.gold,
+  },
+  filterLabel: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  filterLabelActive: {
+    color: colors.background,
+    fontFamily: fonts.bodySemiBold,
   },
   list: {
     paddingHorizontal: 20,

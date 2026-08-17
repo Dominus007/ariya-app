@@ -15,6 +15,8 @@ export type RootStackParamList = {
   Tabs: NavigatorScreenParams<TabParamList>;
   /** mediaId is optional so Player can also just reflect the current player-store queue. */
   Player: { mediaId?: string } | undefined;
+  /** Reflects the current player-store queue too, same as Player — see ShortsPlayerScreen. */
+  ShortsPlayer: undefined;
 };
 
 declare global {

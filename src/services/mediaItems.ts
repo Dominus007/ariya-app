@@ -41,6 +41,7 @@ export function mapMediaItemRow(row: MediaItemRow): MediaItem {
     streamUrl: row.stream_url.trim(),
     durationSeconds: row.duration_seconds ?? undefined,
     isLive: row.is_live,
+    category: row.category ?? undefined,
   };
 }
 
@@ -49,8 +50,14 @@ const SELECT_COLUMNS =
 
 /**
  * Fetch a content row's items — e.g. all songs, or all 'movie' rows tagged
- * 'nollywood'. `category` only applies to movies (see the
- * add_movie_category migration); omit it for every other kind.
+ * 'nollywood'. `category` only applies to movies and shorts (see the
+ * add_movie_category / add_shorts_category migrations); omit it for every
+ * other kind.
+ *
+ * Shorts are `kind: 'video'` with `category: 'shorts'` — same kind as music
+ * videos, distinguished only by category. So a bare `kind: 'video'` query
+ * (no category — what the "Music Videos" row uses) must explicitly exclude
+ * shorts, or short clips would double up in both rows.
  */
 export async function fetchMediaItems({
   kind,
@@ -67,6 +74,8 @@ export async function fetchMediaItems({
 
   if (category) {
     query = query.eq('category', category);
+  } else if (kind === 'video') {
+    query = query.is('category', null);
   }
 
   const { data, error } = await query;
@@ -74,16 +83,47 @@ export async function fetchMediaItems({
   return (data ?? []).map(mapMediaItemRow);
 }
 
+/** Search screen's filter pills — 'all' plus one per content type. */
+export type SearchFilter = 'all' | 'music' | 'videos' | 'podcasts' | 'sports' | 'shorts';
+
 /**
- * Search across the whole catalog by title/subtitle. Bounded to 50 rows —
- * this is a quick-search, not a paginated browse.
+ * Search across the whole catalog by title/subtitle, optionally narrowed to
+ * one of the Search screen's filter pills. Bounded to 50 rows — this is a
+ * quick-search, not a paginated browse.
  */
-export async function searchMediaItems(term: string): Promise<MediaItem[]> {
+export async function searchMediaItems(term: string, filter: SearchFilter = 'all'): Promise<MediaItem[]> {
   let query = supabase
     .from('media_items')
     .select(SELECT_COLUMNS)
     .order('created_at', { ascending: false })
     .limit(50);
+
+  switch (filter) {
+    case 'music':
+      query = query.eq('kind', 'song');
+      break;
+    case 'podcasts':
+      query = query.eq('kind', 'podcast');
+      break;
+    case 'sports':
+      query = query.eq('kind', 'live-sport');
+      break;
+    case 'shorts':
+      query = query.eq('kind', 'video').eq('category', 'shorts');
+      break;
+    case 'videos':
+      // Music videos (category is null) and movies (category is one of the
+      // movie genres) — everything video-shaped except shorts. Written as
+      // an .or() rather than .neq('category', 'shorts') because SQL's NULL
+      // semantics mean `category <> 'shorts'` silently drops every
+      // category-is-null row too (music videos), which is the opposite of
+      // what "Videos" should include.
+      query = query.in('kind', ['video', 'movie']).or('category.is.null,category.neq.shorts');
+      break;
+    case 'all':
+    default:
+      break;
+  }
 
   const trimmed = term.trim();
   if (trimmed) {

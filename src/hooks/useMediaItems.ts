@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { fetchMediaItems, searchMediaItems } from '../services/mediaItems';
+import { fetchMediaItems, searchMediaItems, type SearchFilter } from '../services/mediaItems';
 import type { MediaKind } from '../types/content';
 
 /**
@@ -18,9 +18,9 @@ export function useMediaItemsQuery(kind: MediaKind, category: string | undefined
 }
 
 /** Debounce the search term yourself (see useDebouncedValue) before passing it here. */
-export function useSearchMediaItems(term: string) {
+export function useSearchMediaItems(term: string, filter: SearchFilter = 'all') {
   return useQuery({
-    queryKey: ['media-items-search', term.trim().toLowerCase()],
-    queryFn: () => searchMediaItems(term),
+    queryKey: ['media-items-search', term.trim().toLowerCase(), filter],
+    queryFn: () => searchMediaItems(term, filter),
   });
 }
