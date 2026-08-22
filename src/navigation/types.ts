@@ -17,6 +17,10 @@ export type RootStackParamList = {
   Player: { mediaId?: string } | undefined;
   /** Reflects the current player-store queue too, same as Player — see ShortsPlayerScreen. */
   ShortsPlayer: undefined;
+  /** "Up next" list — reads the current player-store queue directly, no params needed. */
+  Queue: undefined;
+  /** Placeholder artist page — see ArtistScreen. `name` is the MediaItem's subtitle. */
+  Artist: { name: string };
 };
 
 declare global {

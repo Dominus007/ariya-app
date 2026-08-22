@@ -33,6 +33,7 @@ export function MiniPlayerBar({ bottomOffset }: { bottomOffset: number }) {
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const togglePlaying = usePlayerStore((state) => state.togglePlaying);
   const next = usePlayerStore((state) => state.next);
+  const previous = usePlayerStore((state) => state.previous);
   const positionSeconds = usePlayerStore((state) => state.positionSeconds);
   const durationSeconds = usePlayerStore((state) => state.durationSeconds);
 
@@ -70,6 +71,15 @@ export function MiniPlayerBar({ bottomOffset }: { bottomOffset: number }) {
         </Pressable>
 
         <View style={styles.controls}>
+          <Pressable
+            hitSlop={8}
+            onPress={() => {
+              haptics.tap();
+              previous();
+            }}
+          >
+            <Ionicons name="play-skip-back" size={20} color={colors.text} />
+          </Pressable>
           <Pressable
             style={styles.playButton}
             hitSlop={8}

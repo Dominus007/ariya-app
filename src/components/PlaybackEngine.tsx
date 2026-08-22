@@ -66,10 +66,13 @@ export function PlaybackEngine() {
     setProgress(status.currentTime, status.duration);
   }, [isAudio, status.currentTime, status.duration, setProgress]);
 
-  // A track finished — advance the queue.
+  // A track finished — advance the queue, applying repeat/shuffle rules.
+  // expo-audio has no onPlaybackStatusUpdate callback prop (that was expo-av,
+  // which SDK 57 dropped); useAudioPlayerStatus's didJustFinish flag above is
+  // its hook-based equivalent, so this effect is that listener.
   useEffect(() => {
     if (isAudio && status.didJustFinish) {
-      usePlayerStore.getState().next();
+      usePlayerStore.getState().trackFinished();
     }
   }, [isAudio, status.didJustFinish]);
 
