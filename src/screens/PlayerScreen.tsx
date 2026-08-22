@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -15,8 +16,13 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { ActionSheetMenu, type ActionSheetItem } from '../components/ActionSheetMenu';
 import { ArtworkImage } from '../components/ArtworkImage';
+import { LyricsSheet } from '../components/LyricsSheet';
+import { MarqueeText } from '../components/MarqueeText';
 import { haptics } from '../lib/haptics';
+import { useSavedItems, useToggleSaved } from '../hooks/useLibrary';
+import type { RootStackParamList } from '../navigation/types';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
@@ -24,6 +30,9 @@ import type { MediaItem } from '../types/content';
 
 const DISMISS_DISTANCE = 120;
 const DISMISS_VELOCITY = 800;
+const SHARE_URL = 'ariyastream.netlify.app';
+
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 /**
  * Full-screen "Now Playing" sheet. Presented as a transparent modal sliding
@@ -37,9 +46,13 @@ const DISMISS_VELOCITY = 800;
  * this screen just reflects usePlayerStore's shared position/duration for
  * audio. Video still owns its player locally, since it needs a mounted
  * VideoView to render into.
+ *
+ * Below the main transport controls, the screen scrolls to reveal secondary
+ * controls (connect/shuffle/repeat/share/queue/menu) and, further down, a
+ * Lyrics teaser that opens the lyrics bottom sheet — see LyricsSheet.
  */
 export function PlayerScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
 
@@ -48,6 +61,18 @@ export function PlayerScreen() {
   const togglePlaying = usePlayerStore((state) => state.togglePlaying);
   const next = usePlayerStore((state) => state.next);
   const previous = usePlayerStore((state) => state.previous);
+  const shuffle = usePlayerStore((state) => state.shuffle);
+  const repeatMode = usePlayerStore((state) => state.repeatMode);
+  const toggleShuffle = usePlayerStore((state) => state.toggleShuffle);
+  const cycleRepeat = usePlayerStore((state) => state.cycleRepeat);
+
+  const { data: savedItems = [] } = useSavedItems();
+  const toggleSaved = useToggleSaved();
+
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [connectVisible, setConnectVisible] = useState(false);
+  const [lyricsVisible, setLyricsVisible] = useState(false);
+  const [outputDevice, setOutputDevice] = useState('This Device');
 
   const translateY = useSharedValue(0);
   const heroReveal = useSharedValue(0);
@@ -104,6 +129,8 @@ export function PlayerScreen() {
   }
 
   const isVideo = current.kind === 'video' || current.kind === 'movie' || current.kind === 'live-sport';
+  const artistName = current.subtitle;
+  const isSaved = savedItems.some((saved) => saved.id === current.id);
 
   const handleTogglePlaying = () => {
     haptics.press();
@@ -115,6 +142,92 @@ export function PlayerScreen() {
     if (direction === 'next') next();
     else previous();
   };
+
+  const handleToggleSaved = () => {
+    haptics.tap();
+    toggleSaved.mutate({ item: current, isSaved });
+  };
+
+  const handleGoToArtist = () => {
+    haptics.tap();
+    navigation.navigate('Artist', { name: artistName ?? 'Unknown Artist' });
+  };
+
+  const handleShuffle = () => {
+    haptics.tap();
+    toggleShuffle();
+  };
+
+  const handleRepeat = () => {
+    haptics.tap();
+    cycleRepeat();
+  };
+
+  const handleShareTrack = () => {
+    haptics.tap();
+    const byArtist = artistName ? ` by ${artistName}` : '';
+    Share.share({ message: `Listen to ${current.title}${byArtist} on Ariya — ${SHARE_URL}` }).catch(() => {
+      // Share sheet dismissal/cancellation throws on some platforms — not an error worth surfacing.
+    });
+  };
+
+  const handleOpenQueue = () => {
+    haptics.tap();
+    navigation.navigate('Queue');
+  };
+
+  const connectItems: ActionSheetItem[] = [
+    {
+      key: 'this-device',
+      label: 'This Device',
+      icon: 'phone-portrait-outline',
+      selected: outputDevice === 'This Device',
+      onPress: () => {
+        setOutputDevice('This Device');
+        setConnectVisible(false);
+      },
+    },
+  ];
+
+  const menuItems: ActionSheetItem[] = [
+    {
+      key: 'add-to-playlist',
+      label: 'Add to playlist',
+      icon: 'add-circle-outline',
+      onPress: () => {
+        setMenuVisible(false);
+        Alert.alert('Add to playlist', 'Playlists are coming soon.');
+      },
+    },
+    {
+      key: 'go-to-artist',
+      label: 'Go to artist',
+      icon: 'person-outline',
+      onPress: () => {
+        setMenuVisible(false);
+        handleGoToArtist();
+      },
+    },
+    {
+      key: 'go-to-album',
+      label: 'Go to album',
+      icon: 'albums-outline',
+      onPress: () => {
+        setMenuVisible(false);
+        Alert.alert('Album', 'Album pages are coming soon.');
+      },
+    },
+    {
+      key: 'report',
+      label: 'Report',
+      icon: 'flag-outline',
+      destructive: true,
+      onPress: () => {
+        setMenuVisible(false);
+        Alert.alert('Reported', "Thanks for letting us know — we'll take a look.");
+      },
+    },
+  ];
 
   return (
     <Animated.View style={[styles.sheet, { marginTop: insets.top + 28 }, sheetStyle]}>
@@ -128,39 +241,129 @@ export function PlayerScreen() {
         <Ionicons name="chevron-down" size={26} color={colors.gold} />
       </Pressable>
 
+      <Pressable onPress={handleToggleSaved} style={styles.heartButton} hitSlop={8}>
+        <Ionicons name={isSaved ? 'heart' : 'heart-outline'} size={24} color={isSaved ? colors.gold : colors.text} />
+      </Pressable>
+
       <View style={styles.container}>
-        <Animated.View style={[styles.heroWrap, heroStyle]}>
-          {isVideo ? <VideoSurface item={current} isPlaying={isPlaying} /> : <AudioSurface item={current} />}
-        </Animated.View>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          <Animated.View style={[styles.heroWrap, heroStyle]}>
+            {isVideo ? <VideoSurface item={current} isPlaying={isPlaying} /> : <AudioSurface item={current} />}
+          </Animated.View>
 
-        <View style={styles.meta}>
-          <Text style={styles.title} numberOfLines={1}>
-            {current.title}
-          </Text>
-          {current.subtitle ? (
-            <Text style={styles.subtitle} numberOfLines={1}>
-              {current.subtitle}
-            </Text>
-          ) : null}
-        </View>
+          <View style={styles.meta}>
+            <View style={styles.titleRow}>
+              <View style={styles.titleMarqueeWrap}>
+                <MarqueeText text={current.title} style={styles.title} />
+              </View>
+              <Pressable onPress={handleToggleSaved} hitSlop={10} style={styles.addButton}>
+                <Ionicons
+                  name={isSaved ? 'checkmark-circle' : 'add-circle-outline'}
+                  size={26}
+                  color={isSaved ? colors.gold : colors.text}
+                />
+              </Pressable>
+            </View>
+            {artistName ? (
+              <Pressable onPress={handleGoToArtist} hitSlop={6}>
+                <Text style={styles.subtitle} numberOfLines={1}>
+                  {artistName}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
 
-        <View style={styles.controls}>
-          <Pressable onPress={() => handleSkip('previous')} hitSlop={12}>
-            <Ionicons name="play-skip-back" size={26} color={colors.text} />
+          <View style={styles.controls}>
+            <Pressable onPress={() => handleSkip('previous')} hitSlop={12}>
+              <Ionicons name="play-skip-back" size={26} color={colors.text} />
+            </Pressable>
+            <Pressable onPress={handleTogglePlaying} style={styles.playButton} hitSlop={12}>
+              <Ionicons
+                name={isPlaying ? 'pause' : 'play'}
+                size={28}
+                color={colors.background}
+                style={!isPlaying ? styles.playIconOffset : undefined}
+              />
+            </Pressable>
+            <Pressable onPress={() => handleSkip('next')} hitSlop={12}>
+              <Ionicons name="play-skip-forward" size={26} color={colors.text} />
+            </Pressable>
+          </View>
+
+          <View style={styles.secondaryRow}>
+            <Pressable onPress={handleShuffle} hitSlop={10}>
+              <Ionicons name={shuffle ? 'shuffle' : 'shuffle-outline'} size={22} color={shuffle ? colors.gold : colors.textMuted} />
+            </Pressable>
+            <Pressable onPress={handleRepeat} hitSlop={10} style={styles.repeatWrap}>
+              <Ionicons
+                name={repeatMode !== 'off' ? 'repeat' : 'repeat-outline'}
+                size={22}
+                color={repeatMode !== 'off' ? colors.gold : colors.textMuted}
+              />
+              {repeatMode === 'one' ? (
+                <View style={styles.repeatBadge}>
+                  <Text style={styles.repeatBadgeText}>1</Text>
+                </View>
+              ) : null}
+            </Pressable>
+            <Pressable onPress={handleShareTrack} hitSlop={10}>
+              <Ionicons name="share-social-outline" size={22} color={colors.textMuted} />
+            </Pressable>
+          </View>
+
+          <View style={styles.bottomRow}>
+            <Pressable
+              onPress={() => {
+                haptics.tap();
+                setConnectVisible(true);
+              }}
+              hitSlop={10}
+              style={styles.connectButton}
+            >
+              <Ionicons name="volume-high-outline" size={22} color={colors.textMuted} />
+              <Text style={styles.connectLabel} numberOfLines={1}>
+                {outputDevice}
+              </Text>
+            </Pressable>
+
+            <View style={styles.bottomRowRight}>
+              <Pressable onPress={handleOpenQueue} hitSlop={10}>
+                <Ionicons name="list-outline" size={22} color={colors.textMuted} />
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  haptics.tap();
+                  setMenuVisible(true);
+                }}
+                hitSlop={10}
+              >
+                <Ionicons name="ellipsis-horizontal" size={22} color={colors.textMuted} />
+              </Pressable>
+            </View>
+          </View>
+
+          <Pressable
+            style={styles.lyricsRow}
+            onPress={() => {
+              haptics.tap();
+              setLyricsVisible(true);
+            }}
+          >
+            <Text style={styles.lyricsLabel}>Lyrics</Text>
+            <Ionicons name="expand-outline" size={18} color={colors.textMuted} />
           </Pressable>
-          <Pressable onPress={handleTogglePlaying} style={styles.playButton} hitSlop={12}>
-            <Ionicons
-              name={isPlaying ? 'pause' : 'play'}
-              size={28}
-              color={colors.background}
-              style={!isPlaying ? styles.playIconOffset : undefined}
-            />
-          </Pressable>
-          <Pressable onPress={() => handleSkip('next')} hitSlop={12}>
-            <Ionicons name="play-skip-forward" size={26} color={colors.text} />
-          </Pressable>
-        </View>
+        </ScrollView>
       </View>
+
+      <ActionSheetMenu
+        visible={connectVisible}
+        title="Connect to a device"
+        subtitle={`Playing on: ${outputDevice}`}
+        items={connectItems}
+        onClose={() => setConnectVisible(false)}
+      />
+      <ActionSheetMenu visible={menuVisible} items={menuItems} onClose={() => setMenuVisible(false)} />
+      <LyricsSheet visible={lyricsVisible} onClose={() => setLyricsVisible(false)} artist={artistName} title={current.title} />
     </Animated.View>
   );
 }
@@ -278,11 +481,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  heartButton: {
+    position: 'absolute',
+    top: 16,
+    right: 20,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   container: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
     paddingTop: 4,
-    justifyContent: 'space-between',
+  },
+  scrollContent: {
+    paddingBottom: 40,
   },
   center: {
     flex: 1,
@@ -308,10 +523,11 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   heroWrap: {
-    flex: 1,
+    width: '100%',
+    alignItems: 'center',
   },
   audioArt: {
-    flex: 1,
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 16,
@@ -345,13 +561,25 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   video: {
-    flex: 1,
+    width: '100%',
+    aspectRatio: 16 / 9,
     borderRadius: 16,
     backgroundColor: colors.cardSurface,
   },
   meta: {
-    marginTop: 16,
+    marginTop: 20,
+    width: '100%',
+  },
+  titleRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
+  },
+  titleMarqueeWrap: {
+    flex: 1,
+  },
+  addButton: {
+    padding: 2,
   },
   title: {
     fontFamily: fonts.bodySemiBold,
@@ -382,5 +610,75 @@ const styles = StyleSheet.create({
   },
   playIconOffset: {
     marginLeft: 3, // optically center the play glyph, which has more weight on its right
+  },
+  secondaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 40,
+    marginTop: 8,
+    marginBottom: 24,
+  },
+  repeatWrap: {
+    position: 'relative',
+  },
+  repeatBadge: {
+    position: 'absolute',
+    bottom: -4,
+    right: -6,
+    minWidth: 12,
+    height: 12,
+    borderRadius: 6,
+    paddingHorizontal: 2,
+    backgroundColor: colors.gold,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  repeatBadgeText: {
+    fontFamily: fonts.bodySemiBold,
+    fontSize: 8,
+    color: colors.background,
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: colors.settingsBorder,
+  },
+  connectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 1,
+  },
+  connectLabel: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 12,
+    color: colors.textMuted,
+    flexShrink: 1,
+  },
+  bottomRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 22,
+  },
+  lyricsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 28,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  lyricsLabel: {
+    fontFamily: fonts.bodySemiBold,
+    fontSize: 14,
+    color: colors.text,
   },
 });

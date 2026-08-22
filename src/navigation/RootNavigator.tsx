@@ -1,7 +1,9 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+import { ArtistScreen } from '../screens/ArtistScreen';
 import { LandingScreen } from '../screens/LandingScreen';
 import { PlayerScreen } from '../screens/PlayerScreen';
+import { QueueScreen } from '../screens/QueueScreen';
 import { ShortsPlayerScreen } from '../screens/ShortsPlayerScreen';
 import { SignInScreen } from '../screens/SignInScreen';
 import { SignUpScreen } from '../screens/SignUpScreen';
@@ -58,6 +60,21 @@ export function RootNavigator() {
               presentation: 'fullScreenModal',
               animation: 'slide_from_bottom',
               gestureEnabled: false,
+            }}
+          />
+          <Stack.Screen
+            name="Queue"
+            component={QueueScreen}
+            options={{
+              presentation: 'transparentModal',
+              animation: 'slide_from_bottom',
+            }}
+          />
+          <Stack.Screen
+            name="Artist"
+            component={ArtistScreen}
+            options={{
+              animation: 'slide_from_right',
             }}
           />
         </>
